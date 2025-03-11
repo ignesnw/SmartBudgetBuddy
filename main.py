@@ -10,20 +10,23 @@ if 'data_manager' not in st.session_state:
     st.session_state.data_manager = DataManager()
 if 'ai_advisor' not in st.session_state:
     st.session_state.ai_advisor = AIAdvisor()
+if 'personal_goal' not in st.session_state:
+    st.session_state.personal_goal = "My financial goals and dreams..."
 
 # Page config
 st.set_page_config(
-    page_title="Personal Finance Advisor",
+    page_title="Personal Finance Tracker",
     page_icon="💰",
     layout="wide"
 )
 
-# Title and description
-st.title("💰 Personal Finance Advisor")
-st.markdown("""
-Track your daily spending and get AI-powered suggestions for your savings!
-Input your daily budget and actual expenses to see how much you can save.
-""")
+# Personal Goals Input
+st.text_area(
+    "What are your financial goals?",
+    value=st.session_state.personal_goal,
+    key="personal_goal_input",
+    height=100
+)
 
 # Sidebar for inputs
 with st.sidebar:
@@ -60,62 +63,52 @@ with st.sidebar:
         )
         st.success("Entry saved successfully!")
 
-# Main content area - Two columns layout
-savings_col, suggestions_col = st.columns([1, 2])
+# Get transaction data
+df = st.session_state.data_manager.get_transactions()
 
-# Left column - Savings Overview
-with savings_col:
-    st.header("💳 Savings Overview")
+# Calculate savings if data exists
+if not df.empty:
+    weekly_data = df[df['date'] >= (datetime.now().date() - timedelta(days=7))]
+    weekly_savings = calculate_savings(weekly_data)
 
-    df = st.session_state.data_manager.get_transactions()
-    if not df.empty:
-        # Calculate weekly savings
-        weekly_data = df[df['date'] >= (datetime.now().date() - timedelta(days=7))]
-        weekly_savings = calculate_savings(weekly_data)
+    monthly_data = df[df['date'] >= (datetime.now().date() - timedelta(days=30))]
+    monthly_savings = calculate_savings(monthly_data)
 
-        # Calculate monthly savings
-        monthly_data = df[df['date'] >= (datetime.now().date() - timedelta(days=30))]
-        monthly_savings = calculate_savings(monthly_data)
+    # Display savings metrics
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("This Week's Savings", format_currency(weekly_savings))
+    with col2:
+        st.metric("This Month's Savings", format_currency(monthly_savings))
 
-        # Display savings metrics
-        st.subheader("Weekly Savings")
-        st.metric("This Week", format_currency(weekly_savings))
-
-        st.subheader("Monthly Savings")
-        st.metric("This Month", format_currency(monthly_savings))
-
-        # Recent transactions
-        st.subheader("Recent Transactions")
+    # Recent transactions in a smaller table
+    with st.expander("Recent Transactions"):
         display_df = df.copy()
         display_df['budget'] = display_df['budget'].apply(format_currency)
         display_df['expense'] = display_df['expense'].apply(format_currency)
-
         st.dataframe(
             display_df.sort_values('date', ascending=False).head(5),
             use_container_width=True
         )
+
+    # Recommendations section
+    st.markdown("---")
+
+    # Weekly recommendations
+    st.header(f"With your weekly savings of {format_currency(weekly_savings)}, you can...")
+    if weekly_savings > 0:
+        suggestions = st.session_state.ai_advisor.get_suggestions(weekly_savings)
+        st.markdown(suggestions)
     else:
-        st.info("Start by adding your daily budget and expenses!")
+        st.info("Keep tracking your expenses to see what you could do with your savings!")
 
-# Right column - AI Suggestions
-with suggestions_col:
-    st.header("💡 Investment Recommendations")
-
-    if not df.empty:
-        tab1, tab2 = st.tabs(["Weekly Investment Ideas", "Monthly Investment Ideas"])
-
-        with tab1:
-            if weekly_savings > 0:
-                suggestions = st.session_state.ai_advisor.get_suggestions(weekly_savings)
-                st.markdown(suggestions)
-            else:
-                st.info("Add this week's transactions to get personalized suggestions!")
-
-        with tab2:
-            if monthly_savings > 0:
-                suggestions = st.session_state.ai_advisor.get_suggestions(monthly_savings)
-                st.markdown(suggestions)
-            else:
-                st.info("Add this month's transactions to get personalized suggestions!")
+    # Monthly recommendations
+    st.header(f"With your monthly savings of {format_currency(monthly_savings)}, you can...")
+    if monthly_savings > 0:
+        suggestions = st.session_state.ai_advisor.get_suggestions(monthly_savings)
+        st.markdown(suggestions)
     else:
-        st.info("Add some transactions to get personalized investment suggestions!")
+        st.info("Keep tracking your expenses to see what you could do with your savings!")
+
+else:
+    st.info("Start by adding your daily budget and expenses!")
