@@ -112,3 +112,9 @@ if not df.empty:
 
 else:
     st.info("Start by adding your daily budget and expenses!")
+
+
+if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 8501))  # Get port from environment or default to 8501
+    st.run(server_address="0.0.0.0", server_port=port)
