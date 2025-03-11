@@ -1,6 +1,7 @@
 import os
 from typing import List
 import requests
+from datetime import datetime
 
 class AIAdvisor:
     def __init__(self):
@@ -34,13 +35,13 @@ class AIAdvisor:
 
     def _create_prompt(self, savings: float) -> str:
         return f"""
-        Given a savings amount of ${savings:,.2f}, suggest 3-4 ways to allocate 
-        these savings across different investment options and goals. Consider:
-        1. Investment opportunities (stocks, crypto, etc.)
-        2. Travel plans
+        Given a savings amount of Rp {savings:,.0f}, suggest 3-4 specific ways to 
+        allocate these savings. Consider:
+        1. Bitcoin investment opportunities (with current BTC price)
+        2. Travel plans (with specific destinations and ticket prices)
         3. Education savings
         4. Emergency fund
-        Be specific with suggestions and approximate allocations.
+        Be specific with suggestions and include approximate prices and links.
         """
 
     def _format_suggestions(self, raw_suggestions: str) -> str:
@@ -50,22 +51,28 @@ class AIAdvisor:
         return formatted
 
     def _get_fallback_suggestions(self, savings: float) -> str:
-        """Provide basic suggestions when API is not available."""
+        """Provide detailed suggestions when API is not available."""
+        current_month = datetime.now().strftime("%B %Y")
         suggestions = f"""
-        Here are some general suggestions for your ${savings:,.2f} savings:
+        Here are some specific suggestions for your Rp {savings:,.0f} savings for {current_month}:
 
-        1. Emergency Fund (40%): ${savings * 0.4:,.2f}
-           - Keep this in a high-yield savings account
+        1. Bitcoin Investment (30%): Rp {savings * 0.3:,.0f}
+           - Current BTC Price: ~Rp 900,000,000 per BTC
+           - You could buy approximately {(savings * 0.3 / 900000000):,.5f} BTC
+           - Consider using Indodax: https://indodax.com/market/BTCIDR
 
-        2. Investment (30%): ${savings * 0.3:,.2f}
-           - Consider low-cost index funds or ETFs
+        2. Travel Fund (40%): Rp {savings * 0.4:,.0f}
+           - One-way ticket to Singapore: ~Rp 1,300,000
+           - Book through:
+             • Traveloka: https://www.traveloka.com
+             • Booking.com: https://www.booking.com
 
-        3. Short-term Goals (20%): ${savings * 0.2:,.2f}
-           - Travel fund
-           - Major purchases
+        3. Emergency Fund (20%): Rp {savings * 0.2:,.0f}
+           - Keep in high-yield savings account
+           - Consider digital banks like Jenius or TMRW
 
-        4. Education/Personal Development (10%): ${savings * 0.1:,.2f}
-           - Online courses
-           - Skills development
+        4. Education/Personal Development (10%): Rp {savings * 0.1:,.0f}
+           - Online courses (Udemy/Coursera)
+           - Professional certification
         """
         return suggestions

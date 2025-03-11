@@ -23,33 +23,36 @@ st.set_page_config(
 st.title("💰 Personal Finance Advisor")
 st.markdown("""
 Track your daily spending and get AI-powered suggestions for your savings!
+Input your daily budget and actual expenses to see how much you can save.
 """)
 
 # Sidebar for inputs
 with st.sidebar:
     st.header("Daily Budget & Expenses")
-    
+
     # Date selector (default to today)
     selected_date = st.date_input(
         "Select Date",
         datetime.now().date()
     )
-    
+
     # Budget and expense inputs
     daily_budget = st.number_input(
-        "Daily Budget",
-        min_value=0.0,
-        value=100.0,
-        step=10.0
+        "Daily Budget (Rp)",
+        min_value=0,
+        value=100000,
+        step=50000,
+        format="%d"
     )
-    
+
     daily_expense = st.number_input(
-        "Daily Expense",
-        min_value=0.0,
-        value=0.0,
-        step=10.0
+        "Daily Expense (Rp)",
+        min_value=0,
+        value=0,
+        step=50000,
+        format="%d"
     )
-    
+
     if st.button("Save Entry"):
         st.session_state.data_manager.add_transaction(
             selected_date,
@@ -64,12 +67,12 @@ col1, col2 = st.columns([2, 1])
 with col1:
     # Display transactions and savings
     st.subheader("Your Financial Overview")
-    
+
     df = st.session_state.data_manager.get_transactions()
     if not df.empty:
         # Calculate savings
         total_savings = calculate_savings(df)
-        
+
         # Display metrics
         metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
         with metrics_col1:
@@ -84,31 +87,51 @@ with col1:
                 df[df['date'] >= (datetime.now().date() - timedelta(days=30))]
             )
             st.metric("Monthly Savings", format_currency(monthly_savings))
-        
+
         # Plotting
         fig = px.line(
             df,
             x='date',
             y=['budget', 'expense'],
-            title='Budget vs Expenses Over Time'
+            title='Budget vs Expenses Over Time (in Rupiah)'
         )
         st.plotly_chart(fig, use_container_width=True)
-        
+
         # Display transactions table
         st.subheader("Recent Transactions")
+
+        # Format currency columns
+        display_df = df.copy()
+        display_df['budget'] = display_df['budget'].apply(format_currency)
+        display_df['expense'] = display_df['expense'].apply(format_currency)
+
         st.dataframe(
-            df.sort_values('date', ascending=False),
+            display_df.sort_values('date', ascending=False),
             use_container_width=True
         )
     else:
         st.info("No transactions recorded yet. Start by adding your daily budget and expenses!")
 
 with col2:
-    # AI Suggestions
+    # AI Suggestions based on weekly/monthly savings
     st.subheader("💡 AI Savings Suggestions")
-    
-    if not df.empty and total_savings > 0:
-        suggestions = st.session_state.ai_advisor.get_suggestions(total_savings)
-        st.markdown(suggestions)
+
+    if not df.empty:
+        # Use weekly or monthly savings for suggestions
+        weekly_tab, monthly_tab = st.tabs(["Weekly Savings", "Monthly Savings"])
+
+        with weekly_tab:
+            if weekly_savings > 0:
+                suggestions = st.session_state.ai_advisor.get_suggestions(weekly_savings)
+                st.markdown(suggestions)
+            else:
+                st.info("Add some transactions to get weekly savings suggestions!")
+
+        with monthly_tab:
+            if monthly_savings > 0:
+                suggestions = st.session_state.ai_advisor.get_suggestions(monthly_savings)
+                st.markdown(suggestions)
+            else:
+                st.info("Add some transactions to get monthly savings suggestions!")
     else:
         st.info("Add some transactions to get personalized savings suggestions!")

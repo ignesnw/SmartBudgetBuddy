@@ -7,5 +7,5 @@ def calculate_savings(df: pd.DataFrame) -> float:
     return total_budget - total_expense
 
 def format_currency(amount: float) -> str:
-    """Format amount as currency."""
-    return f"${amount:,.2f}"
+    """Format amount as Indonesian Rupiah."""
+    return f"Rp {amount:,.0f}"
