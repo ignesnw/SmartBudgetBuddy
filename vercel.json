@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@streamlit/vercel-plugin@latest"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "main.py"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": ".",
+    "PORT": "5000"
+  }
+}
