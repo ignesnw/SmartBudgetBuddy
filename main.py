@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 from datetime import datetime, timedelta
 from data_manager import DataManager
 from ai_advisor import AIAdvisor
@@ -61,77 +60,62 @@ with st.sidebar:
         )
         st.success("Entry saved successfully!")
 
-# Main content area
-col1, col2 = st.columns([2, 1])
+# Main content area - Two columns layout
+savings_col, suggestions_col = st.columns([1, 2])
 
-with col1:
-    # Display transactions and savings
-    st.subheader("Your Financial Overview")
+# Left column - Savings Overview
+with savings_col:
+    st.header("💳 Savings Overview")
 
     df = st.session_state.data_manager.get_transactions()
     if not df.empty:
-        # Calculate savings
-        total_savings = calculate_savings(df)
+        # Calculate weekly savings
+        weekly_data = df[df['date'] >= (datetime.now().date() - timedelta(days=7))]
+        weekly_savings = calculate_savings(weekly_data)
 
-        # Display metrics
-        metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
-        with metrics_col1:
-            st.metric("Total Savings", format_currency(total_savings))
-        with metrics_col2:
-            weekly_savings = calculate_savings(
-                df[df['date'] >= (datetime.now().date() - timedelta(days=7))]
-            )
-            st.metric("Weekly Savings", format_currency(weekly_savings))
-        with metrics_col3:
-            monthly_savings = calculate_savings(
-                df[df['date'] >= (datetime.now().date() - timedelta(days=30))]
-            )
-            st.metric("Monthly Savings", format_currency(monthly_savings))
+        # Calculate monthly savings
+        monthly_data = df[df['date'] >= (datetime.now().date() - timedelta(days=30))]
+        monthly_savings = calculate_savings(monthly_data)
 
-        # Plotting
-        fig = px.line(
-            df,
-            x='date',
-            y=['budget', 'expense'],
-            title='Budget vs Expenses Over Time (in Rupiah)'
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        # Display savings metrics
+        st.subheader("Weekly Savings")
+        st.metric("This Week", format_currency(weekly_savings))
 
-        # Display transactions table
+        st.subheader("Monthly Savings")
+        st.metric("This Month", format_currency(monthly_savings))
+
+        # Recent transactions
         st.subheader("Recent Transactions")
-
-        # Format currency columns
         display_df = df.copy()
         display_df['budget'] = display_df['budget'].apply(format_currency)
         display_df['expense'] = display_df['expense'].apply(format_currency)
 
         st.dataframe(
-            display_df.sort_values('date', ascending=False),
+            display_df.sort_values('date', ascending=False).head(5),
             use_container_width=True
         )
     else:
-        st.info("No transactions recorded yet. Start by adding your daily budget and expenses!")
+        st.info("Start by adding your daily budget and expenses!")
 
-with col2:
-    # AI Suggestions based on weekly/monthly savings
-    st.subheader("💡 AI Savings Suggestions")
+# Right column - AI Suggestions
+with suggestions_col:
+    st.header("💡 Investment Recommendations")
 
     if not df.empty:
-        # Use weekly or monthly savings for suggestions
-        weekly_tab, monthly_tab = st.tabs(["Weekly Savings", "Monthly Savings"])
+        tab1, tab2 = st.tabs(["Weekly Investment Ideas", "Monthly Investment Ideas"])
 
-        with weekly_tab:
+        with tab1:
             if weekly_savings > 0:
                 suggestions = st.session_state.ai_advisor.get_suggestions(weekly_savings)
                 st.markdown(suggestions)
             else:
-                st.info("Add some transactions to get weekly savings suggestions!")
+                st.info("Add this week's transactions to get personalized suggestions!")
 
-        with monthly_tab:
+        with tab2:
             if monthly_savings > 0:
                 suggestions = st.session_state.ai_advisor.get_suggestions(monthly_savings)
                 st.markdown(suggestions)
             else:
-                st.info("Add some transactions to get monthly savings suggestions!")
+                st.info("Add this month's transactions to get personalized suggestions!")
     else:
-        st.info("Add some transactions to get personalized savings suggestions!")
+        st.info("Add some transactions to get personalized investment suggestions!")
