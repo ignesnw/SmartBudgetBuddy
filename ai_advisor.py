@@ -5,35 +5,16 @@ from datetime import datetime
 
 class AIAdvisor:
     def __init__(self):
-        # Using HuggingFace Inference API
-        self.api_url = "https://api-inference.huggingface.co/models/facebook/opt-350m"
-        self.api_key = os.getenv("HUGGINGFACE_API_KEY", "")
+        """Initialize the AI Advisor.
+        Currently using fallback suggestions, will be updated to use OpenAI/Claude."""
+        self.api_key = os.getenv("OPENAI_API_KEY", "")
 
     def get_suggestions(self, savings: float) -> str:
         """Get AI-powered suggestions for savings allocation."""
-        if not self.api_key:
-            return self._get_fallback_suggestions(savings)
-
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        prompt = self._create_prompt(savings)
-
-        try:
-            response = requests.post(
-                self.api_url,
-                headers=headers,
-                json={"inputs": prompt}
-            )
-
-            if response.status_code == 200:
-                suggestions = response.json()[0]["generated_text"]
-                return self._format_suggestions(suggestions)
-            else:
-                return self._get_fallback_suggestions(savings)
-
-        except Exception as e:
-            return f"Unable to generate suggestions at the moment. Error: {str(e)}"
+        return self._get_fallback_suggestions(savings)
 
     def _create_prompt(self, savings: float) -> str:
+        """Create prompt for the LLM."""
         return f"""
         Given a savings amount of Rp {savings:,.0f}, suggest 3-4 specific ways to 
         allocate these savings. Consider:
@@ -43,12 +24,6 @@ class AIAdvisor:
         4. Emergency fund
         Be specific with suggestions and include approximate prices and links.
         """
-
-    def _format_suggestions(self, raw_suggestions: str) -> str:
-        """Format the AI response into a readable format."""
-        formatted = "Here are some suggestions for allocating your savings:\n\n"
-        formatted += raw_suggestions
-        return formatted
 
     def _get_fallback_suggestions(self, savings: float) -> str:
         """Provide detailed suggestions when API is not available."""
